@@ -108,8 +108,6 @@ class MessagingClient:
         await self._message_queue.put(message)
 
     async def _on_message(self, message: protocol.BaseMessage):
-        print(f"received message of type {message.type}")
-
         if isinstance(message, protocol.HeartbeatClientMessage):
             if not message.up:
                 [self._remove_connection(id) for id in message.clients]
@@ -178,8 +176,6 @@ class MessagingClient:
 
     async def send_message(self, message: Any, request_id: str = None):
         """Send message to all existing connections"""
-        print("sent message:")
-        print(message)
         await asyncio.gather(
             *[
                 conn.send_message(message, request_id)
