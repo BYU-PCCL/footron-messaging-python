@@ -6,7 +6,7 @@ _URL_ENV_NAME = "FT_MSG_URL"
 _URL = (
     os.environ[_URL_ENV_NAME]
     if _URL_ENV_NAME in os.environ
-    else "ws://localhost:8088/messaging/out/dev"
+    else "ws://localhost:8089/out"
 )
 
 
