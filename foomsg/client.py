@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 import json
+import signal
 
 import footron_protocol as protocol
 from footron_protocol import MessageType
@@ -58,16 +59,24 @@ class MessagingClient:
     #  updates and making clients wait, they will have to use a connection listener,
     #  which is technically part of the "advanced" API that won't show up in quickstart
     #  examples.
-    async def start(self):
-        self._socket = await websockets.connect(self._url)
-        receive_task = asyncio.create_task(self._receive_handler())
-        send_task = asyncio.create_task(self._send_handler())
-        done, pending = await asyncio.wait(
-            [receive_task, send_task],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        for task in pending:
-            task.cancel()
+    async def start(self, has_initial_state: bool = False):
+        loop = asyncio.get_event_loop()
+
+        async def close_ws():
+            print("Closing websocket", flush=True)
+            await self._socket.close()
+
+        async with websockets.connect(self._url) as self._socket:
+            loop.add_signal_handler(signal.SIGINT, loop.create_task, close_ws())
+            loop.add_signal_handler(signal.SIGTERM, loop.create_task, close_ws())
+            receive_task = asyncio.create_task(self._receive_handler())
+            send_task = asyncio.create_task(self._send_handler())
+            done, pending = await asyncio.wait(
+                [receive_task, send_task],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            for task in pending:
+                task.cancel()
 
     async def _receive_handler(self):
         async for message in self._socket:
