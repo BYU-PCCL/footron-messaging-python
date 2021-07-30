@@ -5,6 +5,7 @@ from typing import Any, Set, Callable, Awaitable, TYPE_CHECKING
 import footron_protocol as protocol
 
 from .errors import LockStateError
+
 if TYPE_CHECKING:
     from .types import MessageCallback, MessageOrRequest, ConnectionCloseCallback
     from .client import MessagingClient
