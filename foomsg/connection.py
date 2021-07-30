@@ -56,8 +56,8 @@ class _Connection:
 
     id: str
     paused: bool
+    accepted: bool
 
-    _accepted: bool
     _messaging_client: MessagingClient
     _send_protocol_message: _SendProtocolMessageCallback
 
@@ -75,7 +75,7 @@ class _Connection:
         paused: bool = False,
     ):
         self.id = id
-        self._accepted = accepted
+        self.accepted = accepted
         self._messaging_client = messaging_client
         self._send_protocol_message = send_protocol_message_fn
         self.paused = paused
@@ -89,6 +89,8 @@ class _Connection:
 
     async def accept(self):
         await self._update_access(True)
+        if not self._messaging_client.has_initial_state:
+            await self.send_empty_initial_message()
 
     async def deny(self, reason: str = None):
         await self._update_access(False, reason=reason)
@@ -102,6 +104,7 @@ class _Connection:
         await self._send_protocol_message(
             protocol.AccessMessage(accepted=accepted, client=self.id, reason=reason)
         )
+        self.accepted = True
 
     #
     # Message methods
@@ -116,6 +119,9 @@ class _Connection:
         await self._send_protocol_message(
             protocol.ApplicationAppMessage(body=body, req=request_id, client=self.id)
         )
+
+    async def send_empty_initial_message(self):
+        await self.send_message({"__start": ""})
 
     #
     # Message listener handling

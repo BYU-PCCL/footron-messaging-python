@@ -21,6 +21,7 @@ class MessagingClient:
     _message_queue: asyncio.Queue[protocol.BaseMessage] = asyncio.Queue()
     _connections: Dict[str, _Connection] = {}
     _lock: protocol.Lock = False
+    _has_initial_state: bool = False
 
     _socket: websockets.WebSocketClientProtocol
     _url: str
@@ -41,6 +42,10 @@ class MessagingClient:
     def lock(self):
         return self._lock
 
+    @property
+    def has_initial_state(self):
+        return self._has_initial_state
+
     @lock.setter
     async def lock(self, value: protocol.Lock):
         # TODO: Implement lock setting w/ display settings message side effect (is
@@ -60,6 +65,7 @@ class MessagingClient:
     #  which is technically part of the "advanced" API that won't show up in quickstart
     #  examples.
     async def start(self, has_initial_state: bool = False):
+        self._has_initial_state = has_initial_state
         loop = asyncio.get_event_loop()
 
         async def close_ws():
@@ -128,10 +134,13 @@ class MessagingClient:
             return
 
         if isinstance(message, protocol.ConnectMessage):
-            if message.client in self._connections:
-                return
+            if message.client not in self._connections:
+                connection = self._add_connection(message.client)
+            else:
+                connection = self._connections[message.client]
 
-            self._add_connection(message.client)
+            if not self.has_initial_state and connection.accepted:
+                await connection.send_empty_initial_message()
             return
 
         if hasattr(message, "client"):
@@ -198,7 +207,7 @@ class MessagingClient:
     # connections are added/removed)
     #
 
-    def _add_connection(self, id: str):
+    def _add_connection(self, id: str) -> _Connection:
         connection = _Connection(
             id,
             accepted=not self.lock,
@@ -207,6 +216,7 @@ class MessagingClient:
         )
         self._connections[id] = connection
         self._notify_connection_listeners(connection)
+        return connection
 
     def _remove_connection(self, id: str):
         if id not in self._connections:
