@@ -192,11 +192,13 @@ class MessagingClient:
             # Client was not found locally
             self._remove_connection(client)
 
-    async def send_message(self, message: Any, request_id: str = None):
+    async def send_message(
+        self, message: Any, request_id: str = None, ignore_paused: bool = False
+    ):
         """Send message to all existing connections"""
         await asyncio.gather(
             *[
-                conn.send_message(message, request_id)
+                conn.send_message(message, request_id, ignore_paused)
                 for conn in self._connections.values()
             ]
         )

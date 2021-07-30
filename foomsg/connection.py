@@ -110,11 +110,16 @@ class _Connection:
     # Message methods
     #
 
-    async def send_message(self, body: Any, request_id: str = None):
-        if not self._accepted:
+    async def send_message(
+        self, body: Any, request_id: str = None, ignore_paused: bool = False
+    ):
+        if not self.accepted:
             raise protocol.AccessError(
                 "Attempted to send a message to a client that hasn't been accepted"
             )
+
+        if self.paused and not ignore_paused:
+            return
 
         await self._send_protocol_message(
             protocol.ApplicationAppMessage(body=body, req=request_id, client=self.id)
