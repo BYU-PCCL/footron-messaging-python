@@ -182,9 +182,6 @@ class MessagingClient:
                 continue
 
             self._add_connection(client)
-            # raise ConnectionNotFoundError(
-            #     f"Could not find connection '{client}' reported in heartbeat"
-            # )
 
         for client in local_connections.copy():
             if client in heartbeat_connections:
