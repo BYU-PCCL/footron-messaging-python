@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 import json
 import signal
+import threading
 
 import footron_protocol as protocol
 from footron_protocol import MessageType
@@ -73,8 +74,9 @@ class MessagingClient:
             await self._socket.close()
 
         async with websockets.connect(self._url) as self._socket:
-            # loop.add_signal_handler(signal.SIGINT, loop.create_task, close_ws())
-            # loop.add_signal_handler(signal.SIGTERM, loop.create_task, close_ws())
+            if threading.current_thread() is threading.main_thread():
+                loop.add_signal_handler(signal.SIGINT, loop.create_task, close_ws())
+                loop.add_signal_handler(signal.SIGTERM, loop.create_task, close_ws())
             receive_task = asyncio.create_task(self._receive_handler())
             send_task = asyncio.create_task(self._send_handler())
             done, pending = await asyncio.wait(
