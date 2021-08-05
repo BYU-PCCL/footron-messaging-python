@@ -30,11 +30,12 @@ class MessagingClient:
     _connection_listeners: Set[ConnectionCallback]
     _message_listeners: Set[MessageCallback]
 
-    def __init__(self, url):
+    def __init__(self, url, has_initial_state: bool = False):
         self._url = url
         self._message_queue = asyncio.Queue()
         self._connections = {}
         self._lock = False
+        self._has_initial_state = has_initial_state
 
         self._connection_listeners = set()
         self._message_listeners = set()
@@ -65,8 +66,7 @@ class MessagingClient:
     #  updates and making clients wait, they will have to use a connection listener,
     #  which is technically part of the "advanced" API that won't show up in quickstart
     #  examples.
-    async def start(self, has_initial_state: bool = False):
-        self._has_initial_state = has_initial_state
+    async def start(self):
         loop = asyncio.get_event_loop()
 
         async def close_ws():
