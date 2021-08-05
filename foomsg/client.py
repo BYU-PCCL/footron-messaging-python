@@ -93,14 +93,12 @@ class MessagingClient:
         async for message in self._socket:
             # TODO: Add support for binary messages
             if not isinstance(message, str):
-                print("not string?")
                 continue
 
             try:
                 await self._on_message(protocol.deserialize(json.loads(message)))
             except Exception as e:
                 print(e)
-        print("it's over")
 
     async def _send_handler(self):
         while True:
