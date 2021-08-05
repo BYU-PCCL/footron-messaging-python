@@ -11,7 +11,7 @@ from typing import Set, Dict, TYPE_CHECKING, Any
 import websockets
 
 from .connection import _Connection, Connection
-from .errors import LockStateError, ConnectionNotFoundError
+from .errors import LockStateError
 from .request import Request
 
 if TYPE_CHECKING:
