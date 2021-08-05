@@ -77,14 +77,17 @@ class MessagingClient:
             if threading.current_thread() is threading.main_thread():
                 loop.add_signal_handler(signal.SIGINT, loop.create_task, close_ws())
                 loop.add_signal_handler(signal.SIGTERM, loop.create_task, close_ws())
-            receive_task = asyncio.create_task(self._receive_handler())
-            send_task = asyncio.create_task(self._send_handler())
-            done, pending = await asyncio.wait(
-                [receive_task, send_task],
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-            for task in pending:
-                task.cancel()
+            try:
+                receive_task = asyncio.create_task(self._receive_handler())
+                send_task = asyncio.create_task(self._send_handler())
+                done, pending = await asyncio.wait(
+                    [receive_task, send_task],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for task in pending:
+                    task.cancel()
+            finally:
+                await close_ws()
 
     async def _receive_handler(self):
         async for message in self._socket:
