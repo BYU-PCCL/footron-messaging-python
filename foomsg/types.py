@@ -10,3 +10,4 @@ if TYPE_CHECKING:
     MessageCallback = Callable[[MessageOrRequest], None]
     ConnectionCallback = Callable[[Connection], None]
     ConnectionCloseCallback = Callable[[], None]
+    LifecycleCallback = Callable[[bool], None]

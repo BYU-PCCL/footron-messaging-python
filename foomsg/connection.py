@@ -7,7 +7,12 @@ import footron_protocol as protocol
 from .errors import LockStateError
 
 if TYPE_CHECKING:
-    from .types import MessageCallback, MessageOrRequest, ConnectionCloseCallback
+    from .types import (
+        MessageCallback,
+        MessageOrRequest,
+        ConnectionCloseCallback,
+        LifecycleCallback,
+    )
     from .client import MessagingClient
 
 
@@ -56,14 +61,15 @@ class _Connection:
     """Internally visible connection object"""
 
     id: str
-    paused: bool
     accepted: bool
 
+    _paused: bool
     _messaging_client: MessagingClient
     _send_protocol_message: _SendProtocolMessageCallback
 
     _message_listeners: Set[MessageCallback]
     _close_listeners: Set[ConnectionCloseCallback]
+    _lifecycle_listeners: Set[LifecycleCallback]
 
     def __init__(
         self,
@@ -79,10 +85,20 @@ class _Connection:
         self.accepted = accepted
         self._messaging_client = messaging_client
         self._send_protocol_message = send_protocol_message_fn
-        self.paused = paused
+        self._paused = paused
 
         self._message_listeners = set()
         self._close_listeners = set()
+        self._lifecycle_listeners = set()
+
+    @property
+    def paused(self):
+        return self._paused
+
+    @paused.setter
+    def paused(self, paused):
+        self._paused = paused
+        self.notify_lifecycle_listeners(paused)
 
     #
     # Access methods
@@ -160,3 +176,19 @@ class _Connection:
 
     def notify_close_listeners(self):
         [callback() for callback in self._close_listeners]
+
+    #
+    # Lifecycle listener handling
+    #
+
+    def add_lifecycle_listener(self, callback: LifecycleCallback):
+        self._lifecycle_listeners.add(callback)
+
+    def remove_lifecycle_listener(self, callback: LifecycleCallback):
+        self._lifecycle_listeners.remove(callback)
+
+    def clear_lifecycle_listeners(self):
+        self._lifecycle_listeners.clear()
+
+    def notify_lifecycle_listeners(self, paused: bool):
+        [callback(paused) for callback in self._lifecycle_listeners]
