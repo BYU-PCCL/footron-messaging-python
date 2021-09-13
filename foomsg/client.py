@@ -159,8 +159,8 @@ class MessagingClient:
                 else Request(message.body, message.req)
             )
 
-            self._notify_message_listeners(listener_message)
-            self._connections[message.client].notify_message_listeners(listener_message)
+            await self._notify_message_listeners(listener_message)
+            await self._connections[message.client].notify_message_listeners(listener_message)
             return
 
         if isinstance(message, protocol.LifecycleMessage):
@@ -240,8 +240,13 @@ class MessagingClient:
     def _clear_message_listeners(self):
         self._message_listeners.clear()
 
-    def _notify_message_listeners(self, message: MessageOrRequest):
-        [callback(message) for callback in self._message_listeners]
+    async def _notify_message_listeners(self, message: MessageOrRequest):
+        event_loop = asyncio.get_event_loop()
+        for callback in self._message_listeners:
+            if asyncio.iscoroutine():
+                event_loop.create_task(callback(message))
+            else:
+                callback(message)
 
     #
     # Connection listener handling

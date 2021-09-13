@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Set, Callable, Awaitable, TYPE_CHECKING
 
+import asyncio
 import footron_protocol as protocol
 
 from .errors import LockStateError
@@ -158,8 +159,13 @@ class _Connection:
     def clear_message_listeners(self):
         self._message_listeners.clear()
 
-    def notify_message_listeners(self, message: MessageOrRequest):
-        [callback(message) for callback in self._message_listeners]
+    async def notify_message_listeners(self, message: MessageOrRequest):
+        event_loop = asyncio.get_event_loop()
+        for callback in self._message_listeners:
+            if asyncio.iscoroutine():
+                event_loop.create_task(callback(message))
+            else:
+                callback(message)
 
     #
     # Connection close listener handling
