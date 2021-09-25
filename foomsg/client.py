@@ -54,6 +54,10 @@ class MessagingClient:
         #  fire-and-forget fine?)
         raise NotImplementedError("Lock setting has not been implemented")
 
+    def _reset_connection_state(self):
+        self._connections = {}
+        self._lock = False
+
     # TODO(vinhowe) (ASAP): we need to really iron down the "special first message" case
     #  and how to make it obvious to developers what it is and how/whether to use it.
     #  Maybe a config option in either Messaging or start()? Something like
@@ -69,9 +73,16 @@ class MessagingClient:
     async def start(self):
         loop = asyncio.get_event_loop()
 
-        async def close_ws():
+        async def close_ws(*, restart=False):
             print("Closing websocket", flush=True)
-            await self._socket.close()
+
+            self._reset_connection_state()
+            try:
+                await self._socket.close()
+            finally:
+                if restart:
+                    print("Attempting to restart websocket", flush=True)
+                    asyncio.create_task(self.start())
 
         async with websockets.connect(self._url) as self._socket:
             if threading.current_thread() is threading.main_thread():
@@ -87,7 +98,7 @@ class MessagingClient:
                 for task in pending:
                     task.cancel()
             finally:
-                await close_ws()
+                await close_ws(restart=True)
 
     async def _receive_handler(self):
         async for message in self._socket:
