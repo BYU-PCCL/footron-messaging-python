@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 
 class MessagingClient:
     _message_queue: asyncio.Queue[protocol.BaseMessage] = asyncio.Queue()
-    _connections: Dict[str, _Connection] = {}
-    _lock: protocol.Lock = False
-    _has_initial_state: bool = False
+    _connections: Dict[str, _Connection]
+    _lock: protocol.Lock
+    _has_initial_state: bool
 
     _socket: websockets.WebSocketClientProtocol
     _url: str
