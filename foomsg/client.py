@@ -171,7 +171,9 @@ class MessagingClient:
             )
 
             await self._notify_message_listeners(listener_message)
-            await self._connections[message.client].notify_message_listeners(listener_message)
+            await self._connections[message.client].notify_message_listeners(
+                listener_message
+            )
             return
 
         if isinstance(message, protocol.LifecycleMessage):
