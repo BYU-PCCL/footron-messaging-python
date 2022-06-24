@@ -162,7 +162,7 @@ class _Connection:
     async def notify_message_listeners(self, message: MessageOrRequest):
         event_loop = asyncio.get_event_loop()
         for callback in self._message_listeners:
-            if asyncio.iscoroutine(callback):
+            if asyncio.iscoroutinefunction(callback):
                 event_loop.create_task(callback(message))
             else:
                 callback(message)
