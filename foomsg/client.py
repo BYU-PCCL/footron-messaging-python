@@ -114,7 +114,8 @@ class MessagingClient:
                 for task in pending:
                     task.cancel()
             finally:
-                await close_ws(restart=should_restart)
+                if should_restart:
+                    await close_ws(restart=True)
 
     async def _receive_handler(self):
         async for message in self._socket:
