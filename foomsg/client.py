@@ -1,16 +1,16 @@
 from __future__ import annotations
+
 import asyncio
 import json
 import signal
 import threading
+from typing import TYPE_CHECKING, Any, Dict, Set
 
 import footron_protocol as protocol
+import websockets
 from footron_protocol import MessageType
 
-from typing import Set, Dict, TYPE_CHECKING, Any
-import websockets
-
-from .connection import _Connection, Connection
+from .connection import Connection, _Connection
 from .errors import LockStateError
 from .request import Request
 
