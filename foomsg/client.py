@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import signal
+import sys
 import threading
 from typing import TYPE_CHECKING, Any, Dict, Set
 
@@ -85,9 +86,24 @@ class MessagingClient:
                     asyncio.create_task(self.start())
 
         async with websockets.connect(self._url) as self._socket:
-            if threading.current_thread() is threading.main_thread():
-                loop.add_signal_handler(signal.SIGINT, loop.create_task, close_ws())
-                loop.add_signal_handler(signal.SIGTERM, loop.create_task, close_ws())
+            should_restart = True
+            if (
+                sys.platform in ["linux", "darwin"]
+                and threading.current_thread() is threading.main_thread()
+            ):
+
+                async def exit_signal_handler():
+                    # Prevent finally block from restarting websocket
+                    nonlocal should_restart
+                    should_restart = False
+                    close_ws()
+
+                loop.add_signal_handler(
+                    signal.SIGINT, loop.create_task, exit_signal_handler()
+                )
+                loop.add_signal_handler(
+                    signal.SIGTERM, loop.create_task, exit_signal_handler()
+                )
             try:
                 receive_task = asyncio.create_task(self._receive_handler())
                 send_task = asyncio.create_task(self._send_handler())
@@ -98,7 +114,7 @@ class MessagingClient:
                 for task in pending:
                     task.cancel()
             finally:
-                await close_ws(restart=True)
+                await close_ws(restart=should_restart)
 
     async def _receive_handler(self):
         async for message in self._socket:
