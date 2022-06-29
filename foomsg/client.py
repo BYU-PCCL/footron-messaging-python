@@ -292,4 +292,10 @@ class MessagingClient:
         self._connection_listeners.clear()
 
     def _notify_connection_listeners(self, _connection: _Connection):
-        [callback(Connection(_connection)) for callback in self._connection_listeners]
+        event_loop = asyncio.get_event_loop()
+        for callback in self._connection_listeners:
+            connection = Connection(_connection)
+            if asyncio.iscoroutinefunction(callback):
+                event_loop.create_task(callback(connection))
+            else:
+                callback(connection)
