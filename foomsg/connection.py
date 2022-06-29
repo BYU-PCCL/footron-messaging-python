@@ -6,6 +6,7 @@ import asyncio
 import footron_protocol as protocol
 
 from .errors import LockStateError
+from .util import call_possibly_async_handlers
 
 if TYPE_CHECKING:
     from .types import (
@@ -160,12 +161,7 @@ class _Connection:
         self._message_listeners.clear()
 
     async def notify_message_listeners(self, message: MessageOrRequest):
-        event_loop = asyncio.get_event_loop()
-        for callback in self._message_listeners:
-            if asyncio.iscoroutinefunction(callback):
-                event_loop.create_task(callback(message))
-            else:
-                callback(message)
+        call_possibly_async_handlers(self._message_listeners, message)
 
     #
     # Connection close listener handling
@@ -181,7 +177,7 @@ class _Connection:
         self._close_listeners.clear()
 
     def notify_close_listeners(self):
-        [callback() for callback in self._close_listeners]
+        call_possibly_async_handlers(self._close_listeners)
 
     #
     # Lifecycle listener handling
@@ -197,4 +193,4 @@ class _Connection:
         self._lifecycle_listeners.clear()
 
     def notify_lifecycle_listeners(self, paused: bool):
-        [callback(paused) for callback in self._lifecycle_listeners]
+        call_possibly_async_handlers(self._lifecycle_listeners, paused)

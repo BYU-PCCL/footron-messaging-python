@@ -14,6 +14,7 @@ from footron_protocol import MessageType
 from .connection import Connection, _Connection
 from .errors import LockStateError
 from .request import Request
+from .util import call_possibly_async_handlers
 
 if TYPE_CHECKING:
     from .types import ConnectionCallback, MessageCallback, MessageOrRequest
@@ -271,12 +272,7 @@ class MessagingClient:
         self._message_listeners.clear()
 
     async def _notify_message_listeners(self, message: MessageOrRequest):
-        event_loop = asyncio.get_event_loop()
-        for callback in self._message_listeners:
-            if asyncio.iscoroutinefunction(callback):
-                event_loop.create_task(callback(message))
-            else:
-                callback(message)
+        call_possibly_async_handlers(self._message_listeners, message)
 
     #
     # Connection listener handling
@@ -292,10 +288,5 @@ class MessagingClient:
         self._connection_listeners.clear()
 
     def _notify_connection_listeners(self, _connection: _Connection):
-        event_loop = asyncio.get_event_loop()
-        for callback in self._connection_listeners:
-            connection = Connection(_connection)
-            if asyncio.iscoroutinefunction(callback):
-                event_loop.create_task(callback(connection))
-            else:
-                callback(connection)
+        connection = Connection(_connection)
+        call_possibly_async_handlers(self._connection_listeners, connection)
